@@ -1,0 +1,144 @@
+---
+title: "Jingwen Xu_STA305 A2"
+author: "Jingwen Xu"
+date: "February 21, 2016"
+output: pdf_document
+---
+Question 1 (cont.)
+1 c)
+```{r}
+z7 <- qnorm(0.7, mean = 0, sd = 1)
+z8 <- qnorm(0.8, mean = 0, sd = 1)
+z9 <- qnorm(0.9, mean = 0, sd = 1)
+
+n7 <- (((1.645 + z7)*sqrt(20))/2.1)^2
+n8 <- (((1.645 + z8)*sqrt(20))/2.1)^2
+n9 <- (((1.645 + z9)*sqrt(20))/2.1)^2
+
+n7 #output
+n8 #output
+n9 #output
+```
+Thus the sample size required for $1-\beta$ equals 0.7 is 21.3(22);
+
+The sample size required for $1-\beta$ equals 0.8 is 28.04(29);
+
+The sample size required for $1-\beta$ equals 0.9 is 38.84(39).
+
+We can see from the results that when a higher $1-\beta$ is required, it requires a larger sample size with other parameters staying the same.
+
+1d)
+If the researcher stick to his original plan, he would be not very likely to get the result he want (considering he feel the probability got in part 1 is too low). He would better recruites more subjects in the experiment.
+
+Question 2
+
+2a) 
+To determine whether acetazolamide reduces mechanical ventilation duration, all tests used as followed are one-sided test.
+
+Calculating power by assuming standard normal distribution:
+```{r}
+twosamplettestpow <- function(alpha,n1,n2, mu1, mu2,sigma){
+    delta <- mu1-mu2
+    t.crit <-qt(1-alpha,n1+n2-2)
+    t.gamma <- delta/(sigma*sqrt(1/n1+1/n2))
+    t.power <- 1-pt(t.crit,n1+n2-2,ncp=t.gamma)
+    return(t.power)}
+
+twosamplettestpow(0.05, 150, 300, 27, 24, 10)
+```
+Thus the power of the test assuming standard normal distribution is 0.91.
+
+2b) calculating power with t = 20 by simulating 250000 tests.
+```{r}
+set.seed(2016)
+pvals <- replicate(250000, t.test(24 + 10 * rt(n=300,df=5),
+                                 27 + 10 * rt(n=150,df=5),
+                                 alternative = "less",
+                                 var.equal = T)$p.value) # studies stimulation
+                              
+pow_t5 <- sum(pvals<=0.05)/250000 # calculating the power
+pow_t5 # output
+```
+Thus the power of the test assuming location-scale t5 distribution is 0.75.
+\linebreak
+
+2c) calculating power with t = 20 by simulating 250000 tests.
+```{r}
+set.seed(2016)
+pvals <- replicate(250000, t.test(24 + 10 * rt(n=300,df=20),
+                              27 + 10 * rt(n=150,df=20),
+                              alternative = "less",
+                              var.equal = T)$p.value) # studies stimulation
+pow_t20 <- sum(pvals<=0.05)/250000 # calculating the power
+
+pow_t20 # output
+```
+Thus the power of the test assuming location-scale t20 distribution is 0.88.
+
+2d)
+The main difference comes from the variance difference and the shape of distribution difference (the thickness of the tail). 
+
+Variance: The variance of the location-scale distribution b) and c) has standard deviations depending on the degree of freedom. But for a), the standard deviation is 1.
+
+Shape of distribution: From the graph comparing the three distributions (provided in the assignment handout), we can see that t5 has relatively fatter tails, which leads to less power of the test with same sample size and other parameters.
+
+Question 3
+
+3 a)
+The observed data table of the best type lecture is as followed:
+```{r, fig.width=5, fig.height=6,echo=FALSE}
+# How to display a matrix in rmarkdown
+obs <- matrix(c(1,0,95,NA,2,1,NA,77,3,0,61,NA,4,0,53,NA,5,0,71,
+                      NA,6,1,NA,82,7,1,NA,70), ncol = 4, byrow = TRUE)
+colnames(obs) <- c("Student", "T", "Yi(0)", "Yi(1)")
+library(knitr)
+kable(obs, digits = getOption("digits"))
+```
+
+And the average scores are as followed:
+
+Average of observed score is $\overline{Y_{i}} = 72.7$
+
+Average of T = 0 is $\bar{Y_{i}(0)} = 70$
+
+Average of T = 1 is $\bar{Y_{i}(1)} = 76$
+
+3b)
+The treatment assignemnt is not ignorable since the assignment mechanism depends on the potential outcome of the assignment. She will give the assignment which leads to the best result of study for each student.
+
+3c)
+No. From the observed data we may conclude the inverted class is better than the traditional class, which would be inversely concluded if we are looking at the experimental data.
+
+Generally, students who perform better in an inverted lecture may be a different group (different in brain physiology) than students who perform better in a tradictional lecture. Thus this variable may lead to no conclusion for the observed data.
+
+3d) A randomization test is as followed.
+```{r}
+y0 <- c(76, 53, 65)
+y1 <- c(79, 54, 69, 82)
+both <- c(y0,y1) #pool data
+N <- choose(7, 3)
+res <- numeric(N) # to store the results
+index <-combn(1:7, 3)
+for (i in 1:N)
+{
+    res[i] <- mean(both[index[,i]])-mean(both[-index[,i]])
+}
+hist(res,xlab="ybar0-ybar1", main="Randomization Distribution of difference in means")
+observed <- mean(y0)-mean(y1) #store observed mean difference
+abline(v=observed,col="blue") #add line at observed mean diff
+# of times values from the mean randomization distribution less than observed value
+sum(res<observed) # Number of assignment resulting more extreme result
+N # Number of randomizations
+tbar <- mean(res)
+#pval <- sum(abs(res-tbar)>=abs(observed-tbar))/N # Randomization p value
+pval <- sum(res <= observed)/N
+round(pval,2)
+```
+Since the p value is 0.23, we cannot reject our non-hypothesis and thus there is not enough evidence for us to conclude that the grades in the traditional class are greater than grades in the inverted class.
+
+Assumptions:
+
+Since we are conducting t-test in the randomization test, he assumption we made for the observed data is the normality of data and the independence of each object. If several students assigned in one lecture style go to one same lecture, this would make the independence assumption invalid, which will lead to the causal inderence being not correct.
+
+
+
